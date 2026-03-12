@@ -70,5 +70,6 @@ For compatibility reasons, the following packages are embedded into Bun's binary
 
 ## Additional credits
 
-- Bun's JS transpiler, CSS lexer, and Node.js module resolver source code is a Zig port of [@evanw](https://github.com/evanw)’s [esbuild](https://github.com/evanw/esbuild) project.
+- Bun’s JS transpiler, CSS lexer, and Node.js module resolver source code is a Zig port of [@evanw](https://github.com/evanw)’s [esbuild](https://github.com/evanw/esbuild) project.
+- Bun’s workspace filtering, topological task ordering, and monorepo task orchestration patterns are inspired by [Turborepo](https://github.com/vercel/turborepo) by Vercel, Inc. (MIT licensed).
 - Credit to [@kipply](https://github.com/kipply) for the name "Bun"!
