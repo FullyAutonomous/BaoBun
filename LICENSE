@@ -22,5 +22,8 @@ SOFTWARE.
 
 ---
 
-This project includes code from Bun (https://bun.com), which is also licensed
-under the MIT License. See https://github.com/oven-sh/bun for details.
+Third-Party Attribution
+
+This project includes code from Bun (https://bun.sh), Copyright (c) Jarred Sumner,
+which is licensed under the MIT License. See https://github.com/oven-sh/bun 
+for the original Bun project and its license.
