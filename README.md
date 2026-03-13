@@ -30,11 +30,13 @@
 At its core is the _BaoBun runtime_, a fast JavaScript runtime designed as **a drop-in replacement for Node.js**. It's written in Zig and powered by JavaScriptCore under the hood, dramatically reducing startup times and memory usage.
 
 ```bash
-bun run index.tsx             # TS and JSX supported out-of-the-box
-bun test                      # run tests
-bun install <pkg>             # install a package
-bunx cowsay 'Hello, world!'   # execute a package
+baobun run index.tsx             # TS and JSX supported out-of-the-box
+baobun test                      # run tests
+baobun install <pkg>             # install a package
+baobunx cowsay 'Hello, world!'   # execute a package
 ```
+
+> **💡 Tip:** The `baobun` command is a drop-in replacement for `bun`. Both work identically, and a `bun` symlink is automatically created for compatibility with existing scripts and documentation.
 
 ### BaoBun Enhancements
 
@@ -63,6 +65,7 @@ BaoBun extends Bun with enterprise-grade features for modern development workflo
 - Drop-in compatible with existing Bun projects
 - Seamless migration from standard Bun
 - All Bun features preserved and enhanced
+- `bun` symlink automatically created for backward compatibility
 
 ## Install
 
@@ -86,9 +89,7 @@ The install script will:
 - ✅ Download the appropriate binary
 - ✅ Install to `~/.baobun/bin`
 - ✅ Add to your PATH automatically
-- ✅ Create `baobun` alias (symlink to `bun`)
-
-> **Note:** Both `bun` and `baobun` commands work identically. Use `bun` for compatibility with existing scripts, or `baobun` for explicit BaoBun branding.
+- ✅ Creates `bun` symlink for compatibility with existing Bun projects
 
 ### Alternative Installation Methods
 
@@ -117,16 +118,16 @@ docker pull ghcr.io/fullyautonomous/baobun:latest
 docker run --rm -it ghcr.io/fullyautonomous/baobun:latest
 
 # Run with a project
-docker run --rm -v $(pwd):/workspace -it ghcr.io/fullyautonomous/baobun:latest bun install
-docker run --rm -v $(pwd):/workspace -it ghcr.io/fullyautonomous/baobun:latest bun run index.ts
+docker run --rm -v $(pwd):/workspace -it ghcr.io/fullyautonomous/baobun:latest baobun install
+docker run --rm -v $(pwd):/workspace -it ghcr.io/fullyautonomous/baobun:latest baobun run index.ts
 
 # Use in CI/CD
 FROM ghcr.io/fullyautonomous/baobun:latest AS builder
 WORKDIR /app
 COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile
+RUN baobun install --frozen-lockfile
 COPY . .
-RUN bun run build
+RUN baobun run build
 ```
 
 ### Upgrade
@@ -173,6 +174,8 @@ docker pull ghcr.io/fullyautonomous/baobun:canary
 
 ## About BaoBun
 
+**BaoBun uses the `baobun` command** as its primary interface. Both `baobun` and `bun` commands work identically - a `bun` symlink is automatically created during installation for full backward compatibility with existing Bun projects, scripts, and documentation.
+
 BaoBun is automatically synchronized with upstream Bun to ensure you always have the latest features and fixes. Our automation:
 
 - **Auto-syncs every 3 days** with the latest Bun changes
@@ -190,13 +193,13 @@ BaoBun transforms how you work with monorepos:
 
 ```bash
 # Run commands across workspaces
-bun run build --filter="@myorg/**"
+baobun run build --filter="@myorg/**"
 
 # Parallel execution with proper dependency ordering
-bun run test --parallel
+baobun run test --parallel
 
 # Install dependencies for all workspaces
-bun install
+baobun install
 ```
 
 - **Workspace-aware commands**: Automatically understands your `package.json` workspaces
@@ -209,13 +212,13 @@ Define and execute complex build pipelines with ease:
 
 ```bash
 # Run tasks respecting dependency graph
-bun run pipeline:build
+baobun run pipeline:build
 
 # Incremental builds - only rebuild what changed
-bun run build --incremental
+baobun run build --incremental
 
 # Pipeline caching across runs
-bun run build --cache
+baobun run build --cache
 ```
 
 - **Task dependencies**: Define which tasks depend on others
@@ -228,13 +231,13 @@ Speed up your development and CI/CD with smart caching:
 
 ```bash
 # Cache build artifacts automatically
-bun run build --cache
+baobun run build --cache
 
 # Share cache across team members
-bun run build --remote-cache
+baobun run build --remote-cache
 
 # Inspect cache status
-bun cache status
+baobun cache status
 ```
 
 - **Content-addressable**: Cache keyed by input content, not timestamps
