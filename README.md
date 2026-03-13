@@ -6,7 +6,7 @@
 <p align="center">
 <a href="https://bun.com/discord" target="_blank"><img height=20 src="https://img.shields.io/discord/876711213126520882" /></a>
 <img src="https://img.shields.io/github/stars/oven-sh/bun" alt="stars">
-<a href="https://twitter.com/jarredsumner/status/1542824445810642946"><img src="https://img.shields.io/static/v1?label=speed&message=fast&color=success" alt="Bun speed" /></a>
+<a href="https://twitter.com/jarredsumner/status/1542824445810642946"><img src="https://img.shields.io/static/v1?label=speed&message=fast&color=success" alt="BaoBun speed" /></a>
 </p>
 
 <div align="center">
@@ -24,26 +24,50 @@
 
 ## What is BaoBun?
 
-BaoBun is an all-in-one toolkit for JavaScript and TypeScript apps. It ships as a single executable called `bun`.
+**BaoBun** is an enhanced distribution of [Bun](https://bun.com) — the fast JavaScript runtime — with powerful additions for **monorepos**, **build pipelines**, and **intelligent caching**.
 
-At its core is the _Bun runtime_, a fast JavaScript runtime designed as **a drop-in replacement for Node.js**. It's written in Zig and powered by JavaScriptCore under the hood, dramatically reducing startup times and memory usage.
+### Core Foundation: The Bun Runtime
+
+At its core is the _BaoBun runtime_, a fast JavaScript runtime designed as **a drop-in replacement for Node.js**. It's written in Zig and powered by JavaScriptCore under the hood, dramatically reducing startup times and memory usage.
 
 ```bash
 bun run index.tsx             # TS and JSX supported out-of-the-box
-```
-
-The `bun` command-line tool also implements a test runner, script runner, and Node.js-compatible package manager. Instead of 1,000 node_modules for development, you only need `bun`. Bun's built-in tools are significantly faster than existing options and usable in existing Node.js projects with little to no changes.
-
-```bash
 bun test                      # run tests
-bun run start                 # run the `start` script in `package.json`
 bun install <pkg>             # install a package
 bunx cowsay 'Hello, world!'   # execute a package
 ```
 
+### BaoBun Enhancements
+
+BaoBun extends Bun with enterprise-grade features for modern development workflows:
+
+**🏗️ Enhanced Monorepo Support**
+
+- First-class workspace management with intelligent dependency resolution
+- Parallel execution across workspace packages
+- Optimized hoisting and deduplication for large monorepos
+
+**⚡ Smart Build Pipeline**
+
+- Integrated task orchestration with dependency-aware execution
+- Incremental builds that skip unchanged packages
+- Built-in support for complex build graphs
+
+**💾 Intelligent Caching**
+
+- Persistent caching layer for build artifacts
+- Cache sharing across CI/CD pipelines
+- Content-addressable storage for reproducible builds
+
+**🔧 Developer Experience**
+
+- Drop-in compatible with existing Bun projects
+- Seamless migration from standard Bun
+- All Bun features preserved and enhanced
+
 ## Install
 
-BaoBun supports Linux (x64 & arm64), macOS (x64 & Apple Silicon) and Windows (x64 & arm64).
+BaoBun supports Linux (x64 & arm64), macOS (x64 & Apple Silicon), and Windows (x64 & arm64).
 
 > **Linux users** — Kernel version 5.6 or higher is strongly recommended, but the minimum is 5.1.
 
@@ -76,13 +100,72 @@ To upgrade to the latest version of BaoBun, run:
 bun upgrade
 ```
 
-Bun automatically releases a canary build on every commit to `main`. To upgrade to the latest canary build, run:
+BaoBun automatically releases a canary build on every commit to `main`. To upgrade to the latest canary build, run:
 
 ```sh
 bun upgrade --canary
 ```
 
 [View canary build](https://github.com/oven-sh/bun/releases/tag/canary)
+
+## Why BaoBun?
+
+### Monorepo Excellence
+
+BaoBun transforms how you work with monorepos:
+
+```bash
+# Run commands across workspaces
+bun run build --filter="@myorg/**"
+
+# Parallel execution with proper dependency ordering
+bun run test --parallel
+
+# Install dependencies for all workspaces
+bun install
+```
+
+- **Workspace-aware commands**: Automatically understands your `package.json` workspaces
+- **Smart filtering**: Run commands across specific packages with glob patterns
+- **Dependency hoisting**: Optimized node_modules structure for faster installs
+
+### Build Pipeline Orchestration
+
+Define and execute complex build pipelines with ease:
+
+```bash
+# Run tasks respecting dependency graph
+bun run pipeline:build
+
+# Incremental builds - only rebuild what changed
+bun run build --incremental
+
+# Pipeline caching across runs
+bun run build --cache
+```
+
+- **Task dependencies**: Define which tasks depend on others
+- **Parallel execution**: Run independent tasks concurrently
+- **Pipeline as code**: Configure your build pipeline in `bao.config.ts`
+
+### Intelligent Caching
+
+Speed up your development and CI/CD with smart caching:
+
+```bash
+# Cache build artifacts automatically
+bun run build --cache
+
+# Share cache across team members
+bun run build --remote-cache
+
+# Inspect cache status
+bun cache status
+```
+
+- **Content-addressable**: Cache keyed by input content, not timestamps
+- **Remote caching**: Share cache hits across CI runs and team members
+- **Selective invalidation**: Only invalidate what's actually changed
 
 ## Quick links
 
@@ -408,8 +491,12 @@ bun upgrade --canary
 
 ## Contributing
 
-Refer to the [Project > Contributing](https://bun.com/docs/project/contributing) guide to start contributing to Bun.
+We welcome contributions to BaoBun! Please refer to our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+For the underlying Bun runtime contributions, see the [Bun Contributing Guide](https://bun.com/docs/project/contributing).
 
 ## License
 
-Refer to the [Project > License](https://bun.com/docs/project/licensing) page for information about Bun's licensing.
+BaoBun is licensed under the MIT License with additional components under various open-source licenses. See [LICENSE](LICENSE) for details.
+
+The underlying Bun runtime is licensed under the MIT License. Refer to the [Bun License page](https://bun.com/docs/project/licensing) for more information.
