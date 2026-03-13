@@ -99,6 +99,12 @@ function Install-BaoBun {
     $targetBinary = "$INSTALL_DIR\bun.exe"
     Move-Item -Path $extractedBinary.FullName -Destination $targetBinary -Force
     
+    # Create baobun alias (batch file wrapper)
+    $baobunAlias = "$INSTALL_DIR\baobun.bat"
+    $batchContent = "@echo off`n`"$INSTALL_DIR\bun.exe`" %*"
+    Set-Content -Path $baobunAlias -Value $batchContent -Force
+    Write-Success "Created baobun alias"
+    
     # Cleanup
     Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
     

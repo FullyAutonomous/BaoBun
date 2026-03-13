@@ -117,6 +117,13 @@ install_baobun() {
     mv "$extracted_binary" "$target_binary"
     chmod +x "$target_binary"
     
+    # Create baobun alias (symlink)
+    local baobun_alias="$INSTALL_DIR/baobun"
+    if [ ! -L "$baobun_alias" ]; then
+        ln -s bun "$baobun_alias"
+        log_success "Created baobun alias"
+    fi
+    
     # Cleanup
     rm -rf "$temp_dir"
     

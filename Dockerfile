@@ -48,6 +48,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     curl -fsSL "$DOWNLOAD_URL" -o /tmp/baobun.zip && \
     unzip /tmp/baobun.zip -d /usr/local/bin/ && \
     chmod +x /usr/local/bin/bun && \
+    ln -s /usr/local/bin/bun /usr/local/bin/baobun && \
     rm /tmp/baobun.zip
 
 # Create non-root user
