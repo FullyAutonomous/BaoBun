@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://bun.com"><img src="https://github.com/user-attachments/assets/50282090-adfd-4ddb-9e27-c30753c6b161" alt="Logo" height=170></a>
 </p>
-<h1 align="center">Bun</h1>
+<h1 align="center">BaoBun</h1>
 
 <p align="center">
 <a href="https://bun.com/discord" target="_blank"><img height=20 src="https://img.shields.io/discord/876711213126520882" /></a>
@@ -22,9 +22,9 @@
 
 ### [Read the docs →](https://bun.com/docs)
 
-## What is Bun?
+## What is BaoBun?
 
-Bun is an all-in-one toolkit for JavaScript and TypeScript apps. It ships as a single executable called `bun`.
+BaoBun is an all-in-one toolkit for JavaScript and TypeScript apps. It ships as a single executable called `bun`.
 
 At its core is the _Bun runtime_, a fast JavaScript runtime designed as **a drop-in replacement for Node.js**. It's written in Zig and powered by JavaScriptCore under the hood, dramatically reducing startup times and memory usage.
 
@@ -43,7 +43,7 @@ bunx cowsay 'Hello, world!'   # execute a package
 
 ## Install
 
-Bun supports Linux (x64 & arm64), macOS (x64 & Apple Silicon) and Windows (x64 & arm64).
+BaoBun supports Linux (x64 & arm64), macOS (x64 & Apple Silicon) and Windows (x64 & arm64).
 
 > **Linux users** — Kernel version 5.6 or higher is strongly recommended, but the minimum is 5.1.
 
@@ -70,7 +70,7 @@ docker run --rm --init --ulimit memlock=-1:-1 oven/bun
 
 ### Upgrade
 
-To upgrade to the latest version of Bun, run:
+To upgrade to the latest version of BaoBun, run:
 
 ```sh
 bun upgrade
