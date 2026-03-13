@@ -86,6 +86,9 @@ The install script will:
 - ✅ Download the appropriate binary
 - ✅ Install to `~/.baobun/bin`
 - ✅ Add to your PATH automatically
+- ✅ Create `baobun` alias (symlink to `bun`)
+
+> **Note:** Both `bun` and `baobun` commands work identically. Use `bun` for compatibility with existing scripts, or `baobun` for explicit BaoBun branding.
 
 ### Alternative Installation Methods
 
