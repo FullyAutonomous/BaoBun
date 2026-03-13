@@ -1,0 +1,198 @@
+name: Sync with upstream Bun
+
+on:
+  schedule:
+    # Run at 2:00 AM UTC every 3 days
+    - cron: "0 2 */3 * *"
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout BaoBun repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Fetch upstream changes
+        run: |
+          git remote add upstream https://github.com/oven-sh/bun.git
+          git fetch upstream main
+
+      - name: Check if sync is needed
+        id: check-sync
+        run: |
+          # Get the latest commit hash from upstream
+          UPSTREAM_COMMIT=$(git rev-parse upstream/main)
+          # Get the latest commit hash from origin/main
+          LOCAL_COMMIT=$(git rev-parse origin/main)
+
+          echo "upstream_commit=$UPSTREAM_COMMIT" >> $GITHUB_OUTPUT
+          echo "local_commit=$LOCAL_COMMIT" >> $GITHUB_OUTPUT
+
+          # Check if upstream is ahead
+          if [ "$UPSTREAM_COMMIT" != "$LOCAL_COMMIT" ]; then
+            COMMITS_AHEAD=$(git rev-list --count $LOCAL_COMMIT..upstream/main)
+            echo "commits_ahead=$COMMITS_AHEAD" >> $GITHUB_OUTPUT
+            echo "needs_sync=true" >> $GITHUB_OUTPUT
+            echo "Found $COMMITS_AHEAD new commits upstream"
+          else
+            echo "needs_sync=false" >> $GITHUB_OUTPUT
+            echo "Already up to date with upstream"
+          fi
+
+      - name: Attempt merge
+        id: attempt-merge
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        run: |
+          git checkout main
+
+          # Try to merge upstream changes
+          if git merge upstream/main --no-edit --no-ff; then
+            echo "merge_status=clean" >> $GITHUB_OUTPUT
+            echo "Successfully merged upstream changes"
+          else
+            echo "Merge conflicts detected - checking which files"
+            
+            # Check which files have conflicts
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U | sort | uniq)
+            echo "Conflicts in: $CONFLICTED_FILES"
+            
+            # Check if conflict is ONLY in README.md
+            README_ONLY="true"
+            for file in $CONFLICTED_FILES; do
+              if [ "$file" != "README.md" ]; then
+                README_ONLY="false"
+                break
+              fi
+            done
+            
+            if [ "$README_ONLY" = "true" ] && [ -n "$CONFLICTED_FILES" ]; then
+              # Conflict is only in README.md - auto-resolve to keep BaoBun's version
+              echo "Auto-resolving README.md conflict (keeping BaoBun version)"
+              git checkout --ours README.md
+              git add README.md
+              
+              # Complete the merge
+              git commit -m "Merge upstream bun changes (auto-resolved README.md conflict)"
+              
+              echo "merge_status=auto-resolved" >> $GITHUB_OUTPUT
+              echo "Resolved README.md conflict automatically"
+            else
+              # Other files have conflicts - need manual intervention
+              echo "merge_status=conflict" >> $GITHUB_OUTPUT
+              echo "Non-README conflicts detected - manual intervention required"
+              
+              # Reset to clean state
+              git merge --abort || true
+            fi
+          fi
+
+      - name: Push changes (clean or auto-resolved merge)
+        if: steps.attempt-merge.outputs.merge_status == 'clean' || steps.attempt-merge.outputs.merge_status == 'auto-resolved'
+        run: |
+          git push origin main
+          echo "Successfully pushed upstream changes to main"
+
+      - name: Create PR for manual resolution (conflict)
+        if: steps.attempt-merge.outputs.merge_status == 'conflict'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "[SYNC] Merge upstream bun changes (manual resolution needed)"
+          title: "🔀 Sync: Upstream bun has ${{ steps.check-sync.outputs.commits_ahead }} new commits"
+          body: |
+            ## ⚠️ Manual merge conflict resolution required
+
+            The automated sync from upstream Bun has detected merge conflicts in files other than README.md that need to be resolved manually.
+
+            ### Details:
+            - **Upstream commits ahead:** ${{ steps.check-sync.outputs.commits_ahead }}
+            - **Last sync:** ${{ steps.check-sync.outputs.local_commit }}
+            - **Upstream head:** ${{ steps.check-sync.outputs.upstream_commit }}
+            - **Note:** README.md conflicts are auto-resolved to keep the BaoBun version
+
+            ### How to resolve:
+            1. Checkout this PR branch locally
+            2. Run: `git fetch upstream`
+            3. Run: `git merge upstream/main`
+            4. Resolve any conflicts (except README.md which will auto-resolve)
+            5. Commit and push the changes
+
+            ### View upstream changes:
+            https://github.com/oven-sh/bun/compare/${{ steps.check-sync.outputs.local_commit }}...${{ steps.check-sync.outputs.upstream_commit }}
+
+            ---
+
+            *This PR was automatically created by the sync workflow.*
+          delete-branch: true
+          branch: sync/upstream-${{ github.run_id }}
+
+      - name: Send notification (failure)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Automated upstream sync failed',
+              body: `The automated sync workflow failed on ${new Date().toISOString()}.
+              
+              Please check the workflow logs: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['automation', 'sync-failure']
+            });
+            console.log('Created issue:', data.html_url);
+
+      - name: Trigger Release Build
+        if: steps.attempt-merge.outputs.merge_status == 'clean' || steps.attempt-merge.outputs.merge_status == 'auto-resolved'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build-release.yml',
+              ref: 'main',
+              inputs: {
+                version: 'canary',
+                release_type: 'canary'
+              }
+            });
+            console.log('Triggered build-release workflow:', data);
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.check-sync.outputs.needs_sync }}" == "false" ]; then
+            echo "✅ **Already up to date** - no action needed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.attempt-merge.outputs.merge_status }}" == "clean" ]; then
+            echo "✅ **Successfully synced** - pushed ${{ steps.check-sync.outputs.commits_ahead }} commits to main" >> $GITHUB_STEP_SUMMARY
+            echo "🔨 **Build triggered** - new canary release is building" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.attempt-merge.outputs.merge_status }}" == "auto-resolved" ]; then
+            echo "✅ **Successfully synced with auto-resolution** - pushed ${{ steps.check-sync.outputs.commits_ahead }} commits to main" >> $GITHUB_STEP_SUMMARY
+            echo "- README.md conflict automatically resolved (kept BaoBun version)" >> $GITHUB_STEP_SUMMARY
+            echo "🔨 **Build triggered** - new canary release is building" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.attempt-merge.outputs.merge_status }}" == "conflict" ]; then
+            echo "⚠️ **Conflicts detected** - created PR for manual resolution" >> $GITHUB_STEP_SUMMARY
+            echo "- Commits to sync: ${{ steps.check-sync.outputs.commits_ahead }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Last synced: \`${{ steps.check-sync.outputs.local_commit }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Upstream head: \`${{ steps.check-sync.outputs.upstream_commit }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Workflow failed** - check logs for details" >> $GITHUB_STEP_SUMMARY
+          fi

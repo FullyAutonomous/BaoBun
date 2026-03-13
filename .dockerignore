@@ -19,3 +19,22 @@ node_modules
 *.trace
 
 packages/bun-uws/fuzzing
+
+# BaoBun specific - Docker build optimization
+.github/
+buildkite/
+docs/
+*.md
+LICENSE
+install.sh
+install.ps1
+docker-compose.yml
+Dockerfile
+.DS_Store
+Thumbs.db
+.cache/
+*.log
+logs/
+tmp/
+temp/
+*.tmp

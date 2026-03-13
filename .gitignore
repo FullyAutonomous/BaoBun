@@ -1,4 +1,5 @@
 .claude/settings.local.json
+.aikido/
 .direnv
 .DS_Store
 .env
@@ -19,6 +20,9 @@
 .vs
 .vscode/clang*
 .vscode/cpp*
+.vscode/settings.json
+.vscode/launch.json
+.cursor/environment.json
 .zig-cache
 .bake-debug
 *.a

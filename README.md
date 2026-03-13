@@ -4,19 +4,18 @@
 <h1 align="center">BaoBun</h1>
 
 <p align="center">
-<a href="https://bun.com/discord" target="_blank"><img height=20 src="https://img.shields.io/discord/876711213126520882" /></a>
-<img src="https://img.shields.io/github/stars/oven-sh/bun" alt="stars">
-<a href="https://twitter.com/jarredsumner/status/1542824445810642946"><img src="https://img.shields.io/static/v1?label=speed&message=fast&color=success" alt="BaoBun speed" /></a>
+<img src="https://img.shields.io/github/stars/FullyAutonomous/BaoBun" alt="stars">
+<img src="https://img.shields.io/static/v1?label=speed&message=fast&color=success" alt="BaoBun speed" />
 </p>
 
 <div align="center">
   <a href="https://bun.com/docs">Documentation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://discord.com/invite/CXdq2DP29u">Discord</a>
+  <a href="https://github.com/FullyAutonomous/BaoBun/issues/new">Issues</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://github.com/oven-sh/bun/issues/new">Issues</a>
+  <a href="https://github.com/FullyAutonomous/BaoBun/releases">Releases</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://github.com/oven-sh/bun/issues/159">Roadmap</a>
+  <a href="https://github.com/FullyAutonomous/BaoBun/blob/main/RELEASE_AUTOMATION.md">Automation</a>
   <br />
 </div>
 
@@ -74,39 +73,111 @@ BaoBun supports Linux (x64 & arm64), macOS (x64 & Apple Silicon), and Windows (x
 > **x64 users** — if you see "illegal instruction" or similar errors, check our [CPU requirements](https://bun.com/docs/installation#cpu-requirements-and-baseline-builds)
 
 ```sh
-# with install script (recommended)
-curl -fsSL https://bun.com/install | bash
+# macOS, Linux, and WSL (recommended)
+curl -fsSL https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.sh | bash
 
-# on windows
-powershell -c "irm bun.sh/install.ps1 | iex"
+# Windows (PowerShell)
+powershell -c "irm https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.ps1 | iex"
+```
 
-# with npm
-npm install -g bun
+The install script will:
 
-# with Homebrew
-brew tap oven-sh/bun
-brew install bun
+- ✅ Auto-detect your OS and architecture
+- ✅ Download the appropriate binary
+- ✅ Install to `~/.baobun/bin`
+- ✅ Add to your PATH automatically
 
-# with Docker
-docker pull oven/bun
-docker run --rm --init --ulimit memlock=-1:-1 oven/bun
+### Alternative Installation Methods
+
+**Download from GitHub Releases**
+
+```sh
+# Download manually from releases page
+curl -fsSL https://github.com/FullyAutonomous/BaoBun/releases/latest/download/baobun-linux-x64.zip
+unzip baobun-linux-x64.zip
+sudo mv baobun-linux-x64 /usr/local/bin/bun
+```
+
+**Build from Source**
+
+```sh
+git clone https://github.com/FullyAutonomous/BaoBun.git
+cd BaoBun
+# See BUILD.md for detailed instructions
+```
+
+**Docker**
+
+```sh
+# Pull and run latest BaoBun
+docker pull ghcr.io/fullyautonomous/baobun:latest
+docker run --rm -it ghcr.io/fullyautonomous/baobun:latest
+
+# Run with a project
+docker run --rm -v $(pwd):/workspace -it ghcr.io/fullyautonomous/baobun:latest bun install
+docker run --rm -v $(pwd):/workspace -it ghcr.io/fullyautonomous/baobun:latest bun run index.ts
+
+# Use in CI/CD
+FROM ghcr.io/fullyautonomous/baobun:latest AS builder
+WORKDIR /app
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
+COPY . .
+RUN bun run build
 ```
 
 ### Upgrade
 
-To upgrade to the latest version of BaoBun, run:
+To upgrade to the latest version of BaoBun, re-run the install script:
+
+**Linux/macOS:**
 
 ```sh
-bun upgrade
+curl -fsSL https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.sh | bash
 ```
 
-BaoBun automatically releases a canary build on every commit to `main`. To upgrade to the latest canary build, run:
+**Windows:**
+
+```powershell
+irm https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.ps1 | iex
+```
+
+The install script will automatically download and install the latest BaoBun release.
+
+**Docker:**
 
 ```sh
-bun upgrade --canary
+docker pull ghcr.io/fullyautonomous/baobun:latest
 ```
 
-[View canary build](https://github.com/oven-sh/bun/releases/tag/canary)
+### Canary Builds
+
+BaoBun automatically releases a canary build on every commit to `main`. To install the latest canary build:
+
+**Linux/macOS:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.sh | VERSION=canary bash
+```
+
+**Docker:**
+
+```sh
+docker pull ghcr.io/fullyautonomous/baobun:canary
+```
+
+[View all releases](https://github.com/FullyAutonomous/BaoBun/releases)
+
+## About BaoBun
+
+BaoBun is automatically synchronized with upstream Bun to ensure you always have the latest features and fixes. Our automation:
+
+- **Auto-syncs every 3 days** with the latest Bun changes
+- **Preserves your customizations** (like this README)
+- **Builds and releases** new binaries automatically
+- **Creates canary builds** on every commit
+
+[Learn more about our automation →](RELEASE_AUTOMATION.md)
 
 ## Why BaoBun?
 

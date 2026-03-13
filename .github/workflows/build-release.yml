@@ -1,0 +1,309 @@
+name: Build and Release BaoBun
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., v1.0.0)"
+        required: true
+      release_type:
+        description: "Release type"
+        required: true
+        default: "canary"
+        type: choice
+        options:
+          - canary
+          - stable
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      is_canary: ${{ steps.get-version.outputs.is_canary }}
+    steps:
+      - name: Determine version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_CANARY="${{ github.event.inputs.release_type == 'canary' }}"
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            # Get the latest upstream version and append BaoBun build number
+            UPSTREAM_VERSION=$(curl -s https://api.github.com/repos/oven-sh/bun/releases/latest | jq -r '.tag_name')
+            BAOBUN_BUILD=$(date +%Y%m%d%H%M%S)
+            VERSION="${UPSTREAM_VERSION}-baobun-${BAOBUN_BUILD}"
+            IS_CANARY="true"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            IS_CANARY="false"
+          else
+            VERSION="canary-$(date +%Y%m%d%H%M%S)"
+            IS_CANARY="true"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_canary=$IS_CANARY" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION (canary: $IS_CANARY)"
+
+  build-linux:
+    needs: determine-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-linux-gnu
+            artifact_name: baobun-linux-x64
+          - arch: aarch64
+            target: aarch64-linux-gnu
+            artifact_name: baobun-linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build llvm clang lld
+
+      - name: Build BaoBun
+        run: |
+          export BAO_BUILD_TARGET=${{ matrix.target }}
+          export BAO_VERSION=${{ needs.determine-version.outputs.version }}
+
+          # Run the build
+          bun run build --target=${{ matrix.target }} --release
+
+          # Rename binary to baobun-*
+          mkdir -p dist
+          cp build/release/bun dist/${{ matrix.artifact_name }}
+          chmod +x dist/${{ matrix.artifact_name }}
+
+      - name: Package binary
+        run: |
+          cd dist
+          zip -j ${{ matrix.artifact_name }}.zip ${{ matrix.artifact_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}.zip
+          retention-days: 5
+
+  build-macos:
+    needs: determine-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-macos
+            artifact_name: baobun-darwin-x64
+            runs_on: macos-13
+          - arch: aarch64
+            target: aarch64-macos
+            artifact_name: baobun-darwin-arm64
+            runs_on: macos-14
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Install build dependencies
+        run: |
+          brew install cmake ninja llvm
+
+      - name: Build BaoBun
+        run: |
+          export BAO_BUILD_TARGET=${{ matrix.target }}
+          export BAO_VERSION=${{ needs.determine-version.outputs.version }}
+
+          # Run the build
+          bun run build --target=${{ matrix.target }} --release
+
+          # Rename binary to baobun-*
+          mkdir -p dist
+          cp build/release/bun dist/${{ matrix.artifact_name }}
+          chmod +x dist/${{ matrix.artifact_name }}
+
+      - name: Package binary
+        run: |
+          cd dist
+          zip -j ${{ matrix.artifact_name }}.zip ${{ matrix.artifact_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}.zip
+          retention-days: 5
+
+  build-windows:
+    needs: determine-version
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            artifact_name: baobun-windows-x64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Install build dependencies
+        run: |
+          choco install cmake ninja
+
+      - name: Build BaoBun
+        shell: powershell
+        run: |
+          $env:BAO_BUILD_TARGET = "x86_64-windows-gnu"
+          $env:BAO_VERSION = "${{ needs.determine-version.outputs.version }}"
+
+          # Run the build
+          bun run build --target=x86_64-windows-gnu --release
+
+          # Rename binary to baobun-*
+          New-Item -ItemType Directory -Force -Path "dist"
+          Copy-Item "build\release\bun.exe" "dist\${{ matrix.artifact_name }}.exe"
+
+      - name: Package binary
+        shell: powershell
+        run: |
+          Compress-Archive -Path "dist\${{ matrix.artifact_name }}.exe" -DestinationPath "dist\${{ matrix.artifact_name }}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}.zip
+          retention-days: 5
+
+  create-release:
+    needs: [determine-version, build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: baobun-*
+
+      - name: List artifacts
+        run: |
+          echo "Artifacts to release:"
+          find artifacts -name "*.zip" -type f
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ needs.determine-version.outputs.version }}
+          name: BaoBun ${{ needs.determine-version.outputs.version }}
+          body: |
+            ## BaoBun ${{ needs.determine-version.outputs.version }}
+
+            ${{ needs.determine-version.outputs.is_canary == 'true' && '📅 This is a canary (pre-release) build.' || '✨ This is a stable release.' }}
+
+            ### Installation
+
+            **Linux/macOS:**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.sh | bash
+            ```
+
+            **Windows:**
+            ```powershell
+            irm https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.ps1 | iex
+            ```
+
+            **Docker:**
+            ```bash
+            docker pull ghcr.io/fullyautonomous/baobun:${{ needs.determine-version.outputs.version }}
+            ```
+
+            ### Binaries
+            Download the appropriate binary for your platform from the assets below.
+
+            ### Checksums
+            See attached checksums.txt for SHA256 hashes.
+          files: |
+            artifacts/**/*.zip
+          prerelease: ${{ needs.determine-version.outputs.is_canary == 'true' }}
+          generate_release_notes: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          find . -name "*.zip" -exec sha256sum {} \; > checksums.txt
+          cat checksums.txt
+
+      - name: Update latest release (for canary builds)
+        if: needs.determine-version.outputs.is_canary == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: canary
+          name: BaoBun Canary (Latest)
+          body: |
+            ## 🚀 BaoBun Canary Build
+
+            This is the latest canary build from the main branch.
+
+            **Updated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            **Version:** ${{ needs.determine-version.outputs.version }}
+
+            ### Quick Install
+
+            ```bash
+            # Linux/macOS
+            curl -fsSL https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.sh | bash
+
+            # Windows
+            irm https://raw.githubusercontent.com/FullyAutonomous/BaoBun/main/install.ps1 | iex
+            ```
+
+            ### Docker
+            ```bash
+            docker pull ghcr.io/fullyautonomous/baobun:canary
+            ```
+          files: |
+            artifacts/**/*.zip
+            artifacts/checksums.txt
+          prerelease: true
+          generate_release_notes: false

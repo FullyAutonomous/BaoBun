@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  baobun:
+    image: ghcr.io/fullyautonomous/baobun:latest
+    container_name: baobun-dev
+    volumes:
+      - .:/workspace
+      - baobun-cache:/home/baobun/.baobun
+    working_dir: /workspace
+    command: bun --version
+    # Or run your app:
+    # command: bun run index.ts
+
+  # Example: BaoBun with development server
+  dev:
+    image: ghcr.io/fullyautonomous/baobun:latest
+    container_name: baobun-dev-server
+    volumes:
+      - .:/workspace
+      - baobun-cache:/home/baobun/.baobun
+    working_dir: /workspace
+    command: bun run dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  baobun-cache:
